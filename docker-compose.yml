@@ -1,0 +1,18 @@
+services:
+  ausbildung-bot:
+    build: .
+    container_name: ausbildung-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - CV_PDF_PATH=/app/assets/CV_2026.pdf
+    volumes:
+      - ./assets:/app/assets
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    external: true
+    name: your_docker_network_name  # replace with your network name

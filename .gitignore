@@ -1,0 +1,16 @@
+# Environment & secrets
+.env
+*.json
+!n8n_webhooks_workflow.json
+
+# Personal assets
+assets/foto-CV.png
+assets/*.pdf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Docker
+.dockerignore
