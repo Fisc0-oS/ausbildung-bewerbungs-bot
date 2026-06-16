@@ -15,4 +15,4 @@ services:
 networks:
   bot-network:
     external: true
-    name: your_docker_network_name  # replace with your network name
+    name: vb_bot-network  # your existing Docker network

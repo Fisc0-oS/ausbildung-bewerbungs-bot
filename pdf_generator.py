@@ -26,21 +26,6 @@ WHITE      = colors.white
 
 PHOTO_PATH = Path(__file__).parent / "assets" / "foto-CV.png"
 
-# ── CUSTOMIZE: Your Personal Information ─────────────────────────────────────
-# Replace these placeholders with your actual data before using
-APPLICANT_NAME      = "Your Full Name"
-APPLICANT_STREET    = "Your Street, City"
-APPLICANT_PHONE     = "Your Phone Number"
-APPLICANT_EMAIL     = "your@email.com"
-APPLICANT_WEBSITE   = "your-website.de"
-APPLICANT_GITHUB    = "github.com/yourusername"
-APPLICANT_CITY      = "Your City"
-APPLICANT_POSITION  = "Your Target Position"
-APPLICANT_AVAILABLE = "MM/YYYY"
-# ─────────────────────────────────────────────────────────────────────────────
-
-
-
 
 def s(name, **kw):
     d = dict(fontName="Helvetica", textColor=DARK_GRAY, fontSize=9, leading=13)
@@ -80,11 +65,14 @@ def generate_anschreiben_pdf(anschreiben_text: str, analysis: dict) -> bytes:
 
     # Шапка з фото
     txt_col = [
-        Paragraph(APPLICANT_NAME, s_name),
-        Paragraph("Applicant – {APPLICANT_POSITION}", s_sub),
+        Paragraph("YOUR_NAME", s_name),
+        Paragraph("Bewerber – Fachinformatiker Systemintegration", s_sub),
         hr(thickness=1.2, space_after=5),
-        Paragraph("{APPLICANT_STREET}  ·  {APPLICANT_PHONE}", s_ct),
-        Paragraph("{APPLICANT_EMAIL}  ·  {APPLICANT_WEBSITE}  ·  {APPLICANT_GITHUB}", s_ct),
+        Paragraph("YOUR_STREET  ·  YOUR_CITY  ·  YOUR_PHONE", s_ct),
+        Paragraph(
+            '<a href="mailto:your@email.com" color="#2E75B6">your@email.com</a>  ·  '
+            '<a href="https://your-website.de" color="#2E75B6">your-website.de</a>  ·  '
+            '<a href="https://github.com/YOUR_USERNAME" color="#2E75B6">github.com/YOUR_USERNAME</a>', s_ct),
     ]
 
     if PHOTO_PATH.exists():
@@ -117,7 +105,7 @@ def generate_anschreiben_pdf(anschreiben_text: str, analysis: dict) -> bytes:
             story.append(item)
 
     story.append(sp(0.6))
-    story.append(Paragraph(f"{APPLICANT_CITY}, {datetime.now().strftime('%d. %B %Y')}", s_date))
+    story.append(Paragraph(f"YOUR_CITY, {datetime.now().strftime('%d. ') + ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][datetime.now().month-1] + datetime.now().strftime(' %Y')}", s_date))
 
     firma = analysis.get("firma", "")
     if firma and firma not in ("Unbekannt", ""):
@@ -131,8 +119,8 @@ def generate_anschreiben_pdf(anschreiben_text: str, analysis: dict) -> bytes:
     story.append(hr(thickness=0.5, space_after=8))
 
     # Тіло листа
-    skip = [f"{APPLICANT_CITY},", APPLICANT_PHONE, APPLICANT_EMAIL,
-            APPLICANT_WEBSITE, "github", APPLICANT_NAME, "Mit freundlichen"]
+    skip = ["YOUR_CITY,", "YOUR_STREET", "YOUR_PHONE", "your@email",
+            "v-chipak", "github", "YOUR_NAME", "Mit freundlichen"]
     paras = [p.strip() for p in anschreiben_text.split("\n\n") if p.strip()]
     words = 0
     for para in paras:
@@ -154,7 +142,7 @@ def generate_anschreiben_pdf(anschreiben_text: str, analysis: dict) -> bytes:
     story.append(sp(0.6))
     story.append(Paragraph("Mit freundlichen Grüßen,", s_sign))
     story.append(sp(1.2))
-    story.append(Paragraph(f"<b>{APPLICANT_NAME}</b>", s_sign))
+    story.append(Paragraph("<b>YOUR_NAME</b>", s_sign))
 
     doc.build(story)
     return buf.getvalue()
@@ -185,12 +173,14 @@ def _cv() -> bytes:
 
     # HEADER з фото
     name_block = [
-        Paragraph(APPLICANT_NAME.upper(), s_name),
-        Paragraph("{APPLICANT_POSITION}  —  Available from {APPLICANT_AVAILABLE}", s_sub),
+        Paragraph("VOLODYMYR CHIPAK", s_name),
+        Paragraph("Fachinformatiker Systemintegration  —  Bewerber ab 08/2026", s_sub),
         HRFlowable(width="100%", thickness=1.5, color=LIGHT_BLUE, spaceAfter=5),
         Paragraph(
-            f"{APPLICANT_CITY}  ·  {APPLICANT_PHONE}  ·  {APPLICANT_EMAIL}  ·  "
-            f"{APPLICANT_WEBSITE}  ·  {APPLICANT_GITHUB}", s_ct),
+            "YOUR_CITY  ·  YOUR_PHONE  ·  "
+            '<a href="mailto:your@email.com" color="#2E75B6">your@email.com</a>  ·  '
+            '<a href="https://your-website.de" color="#2E75B6">your-website.de</a>  ·  '
+            '<a href="https://github.com/YOUR_USERNAME" color="#2E75B6">github.com/YOUR_USERNAME</a>', s_ct),
     ]
 
     if PHOTO_PATH.exists():
@@ -231,7 +221,7 @@ def _cv() -> bytes:
     L.append(Paragraph("WAHA · n8n · Ollama · Docker · CUDA · GTX 1080  |  01/2026–heute", s_tag))
     for t in ["Lokales KI-System ohne Cloud — 0€ laufende Kosten",
                "GPU-Inferenz 60+ tok/s, Intent-Detection EN/DE",
-               f"Open Source: {APPLICANT_GITHUB}"]:
+               "Open Source: github.com/YOUR_USERNAME"]:
         L.append(blt(t, s_blt))
 
     L.append(Paragraph("Telegram Ausbildungs-Bot", s_proj))
@@ -241,7 +231,7 @@ def _cv() -> bytes:
                "3-Button-Flow: Senden / Entwurf / Überspringen"]:
         L.append(blt(t, s_blt))
 
-    L.append(Paragraph("Personal Webserver", s_proj))
+    L.append(Paragraph("Webserver your-website.de", s_proj))
     L.append(Paragraph("Ubuntu 24.04 · Apache · Cloudflare · Let's Encrypt  |  02–03/2026", s_tag))
     for t in ["SSL Labs Grade A+, TLS 1.3, 99,9% Uptime in 3 Wochen",
                "Dynamic DNS, IPv4/IPv6, Cloudflare Tunnel"]:
@@ -254,16 +244,16 @@ def _cv() -> bytes:
     L.append(sp(0.2))
     L.append(Paragraph("BERUFSERFAHRUNG", s_sec))
     L.append(HRFlowable(width="100%", thickness=0.4, color=LIGHT_BLUE, spaceAfter=3))
-    L.append(Paragraph("<b>Your Job Title</b>  ·  Company Name  |  MM/YYYY–MM/YYYY", s_body))
-    L.append(Paragraph("<b>Volunteer Service</b>  ·  Organization Name  |  MM/YYYY–MM/YYYY", s_body))
+    L.append(Paragraph("<b>Fachlagerist</b>  ·  MediaMarkt TechVillage Hamburg  |  10–12/2025", s_body))
+    L.append(Paragraph("<b>Bundesfreiwilligendienst</b>  ·  Café Eins Hamburg  |  06/2024–09/2025", s_body))
 
     L.append(sp(0.2))
     L.append(Paragraph("BILDUNG", s_sec))
     L.append(HRFlowable(width="100%", thickness=0.4, color=LIGHT_BLUE, spaceAfter=3))
-    L.append(Paragraph("IT Self-Study (Docker, n8n, Python, Linux, AI)  |  MM/YYYY–MM/YYYY", s_body))
-    L.append(Paragraph("German B2 Course — <b>currently in progress</b>  |  since MM/YYYY", s_body))
-    L.append(Paragraph("German B1 Certificate  |  YYYY", s_body))
-    L.append(Paragraph("Your Degree, Grade X.X  |  YYYY", s_body))
+    L.append(Paragraph("IT-Selbststudium (Docker, n8n, Python, Linux, KI)  |  12/2025–03/2026", s_body))
+    L.append(Paragraph("Deutschkurs B2  —  <b>aktuell in Bearbeitung</b>  |  seit 12/2025", s_body))
+    L.append(Paragraph("Sprachzertifikat Deutsch B1  |  2024", s_body))
+    L.append(Paragraph("Mittlerer Schulabschluss (MSA), Note 3,3  |  2025", s_body))
 
     # ПРАВА КОЛОНКА
     R = []
@@ -306,7 +296,7 @@ def _cv() -> bytes:
     R.append(HRFlowable(width="100%", thickness=0.4, color=LIGHT_BLUE, spaceAfter=3))
     R.append(Paragraph("your-website.de", s_body))
     R.append(Paragraph("SSL Labs Grade A+", s_body))
-    R.append(Paragraph("github.com/yourusername", s_body))
+    R.append(Paragraph("github.com/YOUR_USERNAME", s_body))
 
     R.append(sp(0.3))
     R.append(Paragraph("VERFÜGBARKEIT", s_sec))
@@ -332,7 +322,7 @@ def _cv() -> bytes:
     story.append(sp(0.15))
     story.append(HRFlowable(width="100%", thickness=0.5, color=LIGHT_BLUE, spaceAfter=2))
     story.append(Paragraph(
-        f"{APPLICANT_CITY}, {datetime.now().strftime('%B %Y')}  ·  {APPLICANT_NAME}",
+        f"YOUR_CITY, {['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][datetime.now().month-1] + datetime.now().strftime(' %Y')}  ·  YOUR_NAME",
         s("F", fontSize=7.5, textColor=MID_GRAY, alignment=TA_CENTER)))
 
     doc.build(story)

@@ -325,25 +325,29 @@ async def handle_vacancy_text(update: Update, context: ContextTypes.DEFAULT_TYPE
     rec_emoji = "✅" if (analysis.get("empfehlung") or "BEWERBEN") == "BEWERBEN" else "⚠️"
     anforderungen = "\n".join(f"  • {r}" for r in (analysis.get("top_anforderungen") or []))
     fehlende = "\n".join(f"  • {s}" for s in (analysis.get("fehlende_skills") or ["None"]))
+    def esc(t):
+        return str(t).replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
+    anforderungen = esc(anforderungen)
+    fehlende = esc(fehlende)
     preview = anschreiben[:280].replace("*", "").replace("_", "").replace("`", "")
 
-    firma_line = f"🏢 *Firma:* {analysis['firma']}\n" if analysis.get('firma') and analysis['firma'] not in ('Unknown', '') else ""
-    ort_line = f"📍 *Ort:* {analysis['ort']}\n" if analysis.get('ort') and analysis['ort'] not in ('Unknown', '') else ""
+    firma_line = f"🏢 *Firma:* {esc(analysis['firma'])}\n" if analysis.get('firma') and analysis['firma'] not in ('Unknown', '') else ""
+    ort_line = f"📍 *Ort:* {esc(analysis['ort'])}\n" if analysis.get('ort') and analysis['ort'] not in ('Unknown', '') else ""
     email_line = f"✉️ *Email:* {analysis['email']}\n" if analysis.get('email') else ""
 
     analysis_text = (
         f"📊 *VACANCY ANALYSIS*\n"
         f"{'─' * 30}\n"
         f"{firma_line}"
-        f"💼 *Position:* {analysis.get('stelle', '-')}\n"
+        f"💼 *Position:* {esc(analysis.get('stelle', '-'))}\n"
         f"{ort_line}"
-        f"📅 *Start:* {analysis.get('start', 'n/a')}\n"
+        f"📅 *Start:* {esc(analysis.get('start', 'n/a'))}\n"
         f"{email_line}\n"
         f"{score_emoji} *Match Score:* {score}/100\n"
-        f"_{analysis.get('match_begruendung', '')}_\n\n"
+        f"_{esc(analysis.get('match_begruendung', ''))}_\n\n"
         f"🎯 *Top Requirements:*\n{anforderungen}\n\n"
         f"❓ *Missing Skills:*\n{fehlende}\n\n"
-        f"{rec_emoji} *Recommendation:* {analysis.get('empfehlung', 'BEWERBEN')}\n"
+        f"{rec_emoji} *Recommendation:* {esc(analysis.get('empfehlung', 'BEWERBEN'))}\n"
         f"{'─' * 30}\n"
         f"📝 *Preview:*\n_{preview}..._"
     )
@@ -360,7 +364,6 @@ async def handle_vacancy_text(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     await update.message.reply_text(
         analysis_text,
-        parse_mode="Markdown",
         reply_markup=keyboard
     )
 
@@ -416,12 +419,11 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         log_to_sheets(data, "Sent ✅")
         if success:
             await status_msg.edit_text(
-                f"✅ *Application sent!*\n\n"
+                f"✅ Application sent!\n\n"
                 f"🏢 {data.get('firma', '-')}\n"
                 f"✉️ {data.get('email', '-')}\n"
                 f"📅 Follow-up reminder: +14 days\n"
-                f"📊 Logged to Google Sheets",
-                parse_mode="Markdown"
+                f"📊 Logged to Google Sheets"
             )
         else:
             await status_msg.edit_text(
@@ -437,10 +439,9 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         log_to_sheets(data, "Draft 📝")
         if success:
             await status_msg.edit_text(
-                f"📝 *Draft saved!*\n\n"
+                f"📝 Draft saved!\n\n"
                 f"✉️ Check Gmail Drafts\n"
-                f"📊 Logged to Google Sheets",
-                parse_mode="Markdown"
+                f"📊 Logged to Google Sheets"
             )
         else:
             await status_msg.edit_text(
