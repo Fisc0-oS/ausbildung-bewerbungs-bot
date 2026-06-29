@@ -6,6 +6,7 @@ from io import BytesIO
 from pathlib import Path
 
 from reportlab.lib.pagesizes import A4
+import re
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.lib import colors
@@ -105,7 +106,7 @@ def generate_anschreiben_pdf(anschreiben_text: str, analysis: dict) -> bytes:
             story.append(item)
 
     story.append(sp(0.6))
-    story.append(Paragraph(f"YOUR_CITY, {datetime.now().strftime('%d. ') + ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][datetime.now().month-1] + datetime.now().strftime(' %Y')}", s_date))
+    story.append(Paragraph(f"Hamburg, {datetime.now().strftime('%d. ') + ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][datetime.now().month-1] + datetime.now().strftime(' %Y')}", s_date))
 
     firma = analysis.get("firma", "")
     if firma and firma not in ("Unbekannt", ""):
@@ -121,7 +122,19 @@ def generate_anschreiben_pdf(anschreiben_text: str, analysis: dict) -> bytes:
     # Тіло листа
     skip = ["YOUR_CITY,", "YOUR_STREET", "YOUR_PHONE", "your@email",
             "v-chipak", "github", "YOUR_NAME", "Mit freundlichen"]
-    paras = [p.strip() for p in anschreiben_text.split("\n\n") if p.strip()]
+    # Robust paragraph split: try blank lines, then single newlines, then sentences
+    _txt = anschreiben_text.strip()
+    paras = [p.strip() for p in _txt.split("\n\n") if p.strip()]
+    if len(paras) <= 1:
+        paras = [p.strip() for p in _txt.split("\n") if p.strip()]
+    if len(paras) <= 1:
+        # No newlines at all — split into chunks of ~2 sentences
+        sents = re.split(r"(?<=[.!?])\s+", _txt)
+        paras = []
+        for i in range(0, len(sents), 2):
+            chunk = " ".join(sents[i:i+2]).strip()
+            if chunk:
+                paras.append(chunk)
     words = 0
     for para in paras:
         if any(k in para for k in skip):
@@ -177,7 +190,7 @@ def _cv() -> bytes:
         Paragraph("Fachinformatiker Systemintegration  —  Bewerber ab 08/2026", s_sub),
         HRFlowable(width="100%", thickness=1.5, color=LIGHT_BLUE, spaceAfter=5),
         Paragraph(
-            "YOUR_CITY  ·  YOUR_PHONE  ·  "
+            "Hamburg  ·  YOUR_PHONE  ·  "
             '<a href="mailto:your@email.com" color="#2E75B6">your@email.com</a>  ·  '
             '<a href="https://your-website.de" color="#2E75B6">your-website.de</a>  ·  '
             '<a href="https://github.com/YOUR_USERNAME" color="#2E75B6">github.com/YOUR_USERNAME</a>', s_ct),
@@ -322,7 +335,7 @@ def _cv() -> bytes:
     story.append(sp(0.15))
     story.append(HRFlowable(width="100%", thickness=0.5, color=LIGHT_BLUE, spaceAfter=2))
     story.append(Paragraph(
-        f"YOUR_CITY, {['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][datetime.now().month-1] + datetime.now().strftime(' %Y')}  ·  YOUR_NAME",
+        f"Hamburg, {['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][datetime.now().month-1] + datetime.now().strftime(' %Y')}  ·  YOUR_NAME",
         s("F", fontSize=7.5, textColor=MID_GRAY, alignment=TA_CENTER)))
 
     doc.build(story)

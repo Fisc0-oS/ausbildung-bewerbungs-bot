@@ -2,7 +2,7 @@
 Ausbildung Bewerbungs-Bot
 Automated job application generator for German Ausbildung positions.
 
-Author: github.com/Fisc0-oS
+Author: github.com/YOUR_USERNAME
 """
 
 import logging
@@ -135,29 +135,54 @@ def _manual_extract(text: str) -> dict:
     }
 
 
-def generate_anschreiben(vacancy_text: str, firma: str, stelle: str) -> str:
+def generate_anschreiben(vacancy_text: str, firma: str, stelle: str, ansprechpartner: str = "") -> str:
     """Generate a personalized cover letter using local LLM."""
     firma_display = firma if firma not in ("Unknown", "") else "your company"
+    if ansprechpartner:
+        if "herr" in ansprechpartner.lower():
+            salutation = f"Sehr geehrter {ansprechpartner},"
+        elif "frau" in ansprechpartner.lower():
+            salutation = f"Sehr geehrte {ansprechpartner},"
+        else:
+            salutation = f"Sehr geehrte/r {ansprechpartner},"
+    else:
+        salutation = "Sehr geehrte Damen und Herren,"
 
-    prompt = f"""Write a job application cover letter in German (B2 level).
+    # Detect Ausbildung direction from position title to set the right focus
+    stelle_low = (stelle or "").lower() + " " + (vacancy_text[:300] or "").lower()
+    if "systemintegration" in stelle_low:
+        focus = ("This is a SYSTEMINTEGRATION role: focus on networks, servers, Linux, "
+                 "hardware, IT-security, workplace administration and support. "
+                 "Do NOT talk about game development or programming games.")
+    elif "anwendungsentwicklung" in stelle_low or "anwendungs" in stelle_low:
+        focus = ("This is an ANWENDUNGSENTWICKLUNG role: focus on software development, "
+                 "coding projects, automation and problem solving.")
+    else:
+        focus = ("General IT role: focus on the candidate's practical IT skills "
+                 "(Linux, Docker, networking, servers, security).")
 
-STYLE GUIDELINES:
-- Sound natural and personal, not like a template
-- Short, clear sentences (max 20-25 words each)
-- Active voice, not passive
-- Describe concrete situations instead of listing technologies
-- Show enthusiasm without exaggerating
-- Sound like a young person who speaks German well as a second language (B2)
+    prompt = f"""Write a job application cover letter (Anschreiben) in German, B2 level.
+
+TONE:
+- Friendly and personal, but professional — this is a real job application.
+- Natural, flowing German. Clear and correct. NOT stiff HR-template language, but NOT slang either.
+- Avoid casual words like "cool", "Kram", "das ganze Ding", "krass". Avoid exclamation marks.
+- Write mostly in "ich" form, genuine and concrete.
+- Avoid empty filler phrases ("ich bin hochmotiviert", "ich bin teamfähig") — show it through examples instead.
+
+ROLE FOCUS:
+{focus}
 
 APPLICANT:
-- Lives in Hamburg, Germany
-- Ukrainian, learning German for years, currently in B2 course
-- Built a WhatsApp bot that manages restaurant reservations
-  (runs completely locally on home server, no cloud)
-- Built a Telegram bot that automatically generates job applications
-- Runs own website with excellent security rating
-- Skills: Linux, Docker, Networking, Server administration, Python
-- Available from August 2026, willing to relocate
+- Lives in Hamburg (22309) — do NOT mention relocation.
+- Ukrainian; currently in a German B2 evening course (Abendkurs).
+- English at B2 level — relevant when the company language is English.
+- Runs a WhatsApp bot for restaurant reservations on his own home server, fully local, no cloud (learned Linux, Docker, networking, secure stable operation).
+- Set up his own webserver with SSL, achieving SSL Labs Grade A+.
+- Skills: Linux, Docker, networking, server administration, basic Python (can work with it, not an expert).
+- Available from August 2026.
+
+USE THIS EXACT SALUTATION: {salutation}
 
 POSITION at {firma_display}:
 {stelle}
@@ -165,23 +190,27 @@ POSITION at {firma_display}:
 Requirements:
 {vacancy_text[:800]}
 
-STRUCTURE (follow exactly):
-Paragraph 1 (3-4 sentences): Why this position is interesting — be specific about the role
-Paragraph 2 (4-5 sentences): Describe one concrete project (WhatsApp Bot OR website) — what was built and what was learned
-Paragraph 3 (3-4 sentences): Connect experience to the job requirements
-Paragraph 4 (2-3 sentences): Mention B2 course, motivation and closing
+STRUCTURE:
+Paragraph 1 (3-4 sentences): Why this specific position is interesting — tie it to the role focus above.
+Paragraph 2 (4-5 sentences): One concrete project (home server / WhatsApp bot OR webserver+SSL) — what was built and learned.
+Paragraph 3 (3-4 sentences): Connect that experience to the job requirements.
+Paragraph 4 (2-3 sentences): Mention German B2 course and (if company language is English) English B2; close politely asking for an interview.
 
 STRICT RULES:
-1. Start DIRECTLY with: Sehr geehrte Damen und Herren,
-2. NO date, NO address, NO subject line in the text
-3. NO markdown (no **, no [], no *)
-4. End with: Mit freundlichen Grüßen,
-5. Maximum 200 words
-6. No technology lists — tell a story
+1. Start DIRECTLY with: {salutation}
+2. NO date, NO address, NO subject line.
+3. NO markdown: no **, no *, no [], no links in () — write plain text only.
+4. End with exactly: Mit freundlichen Grüßen,
+5. Maximum 230 words.
+6. No bullet lists of skills — weave them into sentences.
+7. Separate every paragraph with a BLANK LINE (an empty line between paragraphs).
+8. For a SYSTEMINTEGRATION role: NEVER mention game development, "Spieleentwicklung", "Spiele" or "digitale Welten". Talk about IT infrastructure, networks, servers, security and support instead.
+9. English level: always write "Englisch (B2)" or "gute Englischkenntnisse". NEVER write "fließend" for English.
+10. Write natural German. Avoid anglicisms: use "Betrieb des Servers" not "Operation", "Serververwaltung" not "Server-Management".
+11. Write NO website or GitHub links, NO email, NO phone — those are added separately. Plain prose only.
 
 Write the cover letter now:"""
-
-    return ollama_generate(prompt, model="gemma2:9b", max_tokens=800)
+    return ollama_generate(prompt, model="gemma2:9b", max_tokens=900)
 
 
 def clean_anschreiben(text: str) -> str:
@@ -265,6 +294,19 @@ async def handle_vacancy_text(update: Update, context: ContextTypes.DEFAULT_TYPE
     chat_id = update.effective_chat.id
     vacancy_text = update.message.text
 
+    # Extract Ansprechpartner — STRICT: only accept real names (Herr/Frau + Name)
+    ansprechpartner = ""
+    for line in vacancy_text.split("\n")[:5]:
+        line_lower = line.lower()
+        if any(w in line_lower for w in ["ansprechpartner", "gesprächspartner", "kontakt:"]):
+            raw = line.split(":", 1)[1].strip() if ":" in line else ""
+            m = re.search(r"\b(Herr|Frau)\s+([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)?)", raw)
+            if m:
+                ansprechpartner = m.group(0).strip()
+                context.user_data["ansprechpartner"] = ansprechpartner
+            break
+    if not ansprechpartner:
+        context.user_data.pop("ansprechpartner", None)
     if len(vacancy_text) < 50:
         await update.message.reply_text("⚠️ Text too short. Please paste the full job listing.")
         return
@@ -286,7 +328,20 @@ async def handle_vacancy_text(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
 
     # Step 2: Generate cover letter
-    anschreiben_raw = generate_anschreiben(vacancy_text, analysis["firma"], analysis["stelle"])
+    ansprechpartner = context.user_data.get("ansprechpartner", "")
+    anschreiben_raw = generate_anschreiben(vacancy_text, analysis["firma"], analysis["stelle"], ansprechpartner)
+    # Force correct salutation after generation
+    if ansprechpartner:
+        if "herr" in ansprechpartner.lower():
+            correct_salutation = f"Sehr geehrter {ansprechpartner},"
+        elif "frau" in ansprechpartner.lower():
+            correct_salutation = f"Sehr geehrte {ansprechpartner},"
+        else:
+            correct_salutation = f"Sehr geehrte/r {ansprechpartner},"
+        for old_sal in ["Sehr geehrte Damen und Herren,", "Sehr geehrte/r,", "Sehr geehrter,", "Sehr geehrte,"]:
+            if old_sal in anschreiben_raw:
+                anschreiben_raw = anschreiben_raw.replace(old_sal, correct_salutation, 1)
+                break
     if not anschreiben_raw:
         await processing_msg.edit_text("❌ Generation failed. Check if Ollama is running.")
         return
